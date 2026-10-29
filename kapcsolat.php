@@ -1,32 +1,55 @@
 <?php
-session_start();
+require_once 'db.php';
+
 if (!isset($_SESSION['kosar'])) $_SESSION['kosar'] = [];
-$belepve = isset($_GET['belepve']) && $_GET['belepve'] == '1';
 $darab = count($_SESSION['kosar']);
+
+$belepve = isset($_SESSION['user_id']);
+$is_admin_user = false;
+
+if ($belepve) {
+    $user_id = $_SESSION['user_id'];
+    $check_admin = $db->prepare("SELECT is_admin FROM users WHERE id = ?");
+    $check_admin->bind_param("i", $user_id);
+    $check_admin->execute();
+    $admin_res = $check_admin->get_result()->fetch_assoc();
+    $check_admin->close();
+    if ($admin_res && (int)$admin_res['is_admin'] === 1) {
+        $is_admin_user = true;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kapcsolat - RentGamer</title>
-    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/global.css?v=2">
     <link rel="stylesheet" href="css/home.css">
 </head>
 <body>
 <nav class="navbar">
     <div class="nav-container">
-        <a href="index.php<?php echo $belepve ? '?belepve=1' : ''; ?>" class="nav-logo">RentGamer</a>
+        <a href="index.php" class="nav-logo">RentGamer</a>
         <ul class="nav-menu">
-            <li><a href="index.php<?php echo $belepve ? '?belepve=1' : ''; ?>">Kezdőlap</a></li>
-            <li><a href="eszkozok.php<?php echo $belepve ? '?belepve=1' : ''; ?>">Eszközök</a></li>
-            <li><a href="feltetelek.php<?php echo $belepve ? '?belepve=1' : ''; ?>">Bérlési feltételek</a></li>
-            <li><a href="kapcsolat.php<?php echo $belepve ? '?belepve=1' : ''; ?>" class="active">Kapcsolat</a></li>
+            <li><a href="index.php">Kezdőlap</a></li>
+            <li><a href="eszkozok.php">Eszközök</a></li>
+            <li><a href="feltetelek.php">Bérlési feltételek</a></li>
+            <li><a href="kapcsolat.php" class="active">Kapcsolat</a></li>
         </ul>
         <div class="nav-auth">
-            <a href="kosar.php<?php echo $belepve ? '?belepve=1' : ''; ?>" class="btn-cart" style="margin-right: 15px; text-decoration: none;">🛒 Kosár (<?php echo $darab; ?>)</a>
+            <?php if ($is_admin_user): ?>
+                <a href="admin_berlesek.php" class="btn-cart" style="color: #f59e0b; font-weight: bold;">🛠️ Admin Panel</a>
+            <?php endif; ?>
+            <a href="kosar.php" class="btn-cart">🛒 Kosár (<?php echo $darab; ?>)</a>
             <?php if ($belepve): ?>
-                <span style="color: #cbd5e1; margin-right: 15px;">Üdv, Felhasználó!</span>
-                <a href="index.php" class="btn-login" style="border-color: #ef4444; color: #ef4444;">Kijelentkezés</a>
+                <?php if ($is_admin_user): ?>
+                    <span class="nav-user-name" style="color: #f59e0b; font-weight: bold;">🛠️ Admin: <?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
+                <?php else: ?>
+                    <span class="nav-user-name">Szia, <?php echo htmlspecialchars($_SESSION['user_name']); ?>!</span>
+                <?php endif; ?>
+                <a href="logout.php" class="btn-logout">Kijelentkezés</a>
             <?php else: ?>
                 <a href="login.php" class="btn-login">Bejelentkezés</a>
             <?php endif; ?>
@@ -51,7 +74,7 @@ $darab = count($_SESSION['kosar']);
             <form action="#" method="POST" onsubmit="alert('Köszönjük, az üzenetet rögzítettük!'); return false;">
                 <div style="margin-bottom: 15px;">
                     <label style="display:block; color:#cbd5e1; margin-bottom:5px; font-size:0.9rem;">Neved</label>
-                    <input type="text" required placeholder="Teszt Elek" style="width:100%; padding:10px; background:#1e293b; border:1px solid #334155; color:white; border-radius:5px; box-sizing:border-box;">
+                    <input type="text" required placeholder="Teszt Elek" value="<?php echo $belepve ? htmlspecialchars($_SESSION['user_name']) : ''; ?>" style="width:100%; padding:10px; background:#1e293b; border:1px solid #334155; color:white; border-radius:5px; box-sizing:border-box;">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display:block; color:#cbd5e1; margin-bottom:5px; font-size:0.9rem;">E-mail címed</label>
